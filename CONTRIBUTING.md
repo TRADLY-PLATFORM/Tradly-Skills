@@ -1,23 +1,16 @@
-# Contributing Skills
+# Contributing
 
-## Naming
+Contributions should help agents build with Tradly more accurately.
 
-- One folder per skill under `skills/`
-- Skill file name: always `SKILL.md`
-- Skill folder name: lowercase kebab-case (example: `tradly-auth`)
-- Frontmatter `name`: stable id matching folder name (example: `tradly-auth`)
+## Adding A Skill
 
-## Writing Rules
+- Add each skill under `skills/<skill-name>/SKILL.md`.
+- Use lowercase kebab-case for the skill folder name.
+- Keep examples practical and safe to adapt.
+- Do not include real API keys, access tokens, tenant IDs, or customer data.
 
-- Keep scope focused (one major workflow per skill).
-- Put exact headers, payload shape, and endpoint paths.
-- Include at least one end-to-end runnable example.
-- Prefer copy-paste-safe snippets over abstract pseudocode.
-- Add a troubleshooting section for real failure modes.
+## Skill Content
 
-## Validation Before Commit
+Each skill should include clear usage guidance, required inputs, API examples, error handling notes, and troubleshooting tips.
 
-1. Confirm frontmatter exists and is valid YAML.
-2. Confirm no real API keys, tokens, or tenant IDs are present.
-3. Confirm links and endpoint versions are current.
-4. Confirm examples match the stated auth/header requirements.
+Before opening a pull request, confirm links, endpoint paths, and example payloads are current.

@@ -1,15 +1,16 @@
-# Tradly Skills Library
+# Tradly Skills
 
-This repository contains public skill guides for building with Tradly APIs.
+Public skills for building applications with Tradly.
 
-## Current Status
+## Available Skills
 
-- Active skill:
-  - `skills/tradly-api/SKILL.md`
+### Tradly API
 
-## Folder Structure
+Path: `skills/tradly-api/SKILL.md`
 
-This repository uses an Agent Skills-compatible structure:
+Use this skill to build marketplace, storefront, booking, directory, and commerce applications with the Tradly headless API platform.
+
+## Repository Structure
 
 ```text
 Tradly-Skills/
@@ -18,28 +19,16 @@ Tradly-Skills/
   skills/
     tradly-api/
       SKILL.md
-    <future-skill>/
-      SKILL.md
 ```
 
-## Naming Convention
+## Usage
 
-- One folder per skill under `skills/`
-- Skill file name is always `SKILL.md`
-- Skill folder name format: lowercase kebab-case
-- Examples:
-  - `skills/tradly-api/SKILL.md`
-  - `skills/tradly-email/SKILL.md`
-  - `skills/tradly-auth/SKILL.md`
+Install or reference the skill from `skills/tradly-api/SKILL.md` in an agent environment that supports skills.
 
-## Skill Quality Checklist
+For Codex-style local usage, the skill can be placed at:
 
-Each `SKILL.md` should include:
+```text
+~/.codex/skills/tradly-api/SKILL.md
+```
 
-- YAML frontmatter: `name`, `description`, `license`
-- `When to use` and `When not to use`
-- Required environment variables
-- Exact API headers and auth rules
-- Common tasks with runnable examples
-- Error handling and troubleshooting
-- Security notes (no hardcoded secrets)
+Additional Tradly skills may be added under `skills/` as separate folders.

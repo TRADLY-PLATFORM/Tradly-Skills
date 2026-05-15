@@ -18,7 +18,7 @@ license: Apache 2.0
 - You are building on a non-Tradly backend where replacing core commerce APIs is out of scope.
 - You cannot securely manage API credentials/server-side routes.
 
-## Agent Execution Contract
+## Implementation Workflow
 
 When an agent uses this skill, it should:
 
@@ -35,7 +35,7 @@ When an agent uses this skill, it should:
 - `TRADLY_API_KEY` or `VITE_TRADLY_AUTH_KEY` depending on integration mode
 - Optional: user auth token for user-scoped endpoints
 
-## Output Expectations
+## Recommended Deliverables
 
 Deliverables from this skill should include:
 
@@ -45,7 +45,7 @@ Deliverables from this skill should include:
 - Error and retry strategy for network/auth/rate-limit failures
 - Minimal test or verification steps for critical user journeys
 
-## Quick Build Recipe (Agent-Friendly)
+## Quick Build Recipe
 
 1. Setup environment variables and `.gitignore` secret rules.
 2. Create `tradlyApi` client with base headers and centralized error handling.
