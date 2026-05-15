@@ -1,25 +1,36 @@
 # Tradly Skills Library
 
-This repository is a skills library for agent workflows around Tradly.
+This repository contains public skill guides for building with Tradly APIs.
 
 ## Current Status
 
-- Existing skill source: `tradly-api-SKILL.md`
-- Library baseline added: discovery docs + reusable template
+- Active skill:
+  - `skills/tradly-api/SKILL.md`
 
-## Recommended Skill Layout
+## Folder Structure
 
-Use one folder per skill:
+This repository uses an Agent Skills-compatible structure:
 
 ```text
-skills/
-  tradly-api/
-    SKILL.md
-  <next-skill>/
-    SKILL.md
+Tradly-Skills/
+  README.md
+  CONTRIBUTING.md
+  skills/
+    tradly-api/
+      SKILL.md
+    <future-skill>/
+      SKILL.md
 ```
 
-This keeps skills portable and easy for agents to scan.
+## Naming Convention
+
+- One folder per skill under `skills/`
+- Skill file name is always `SKILL.md`
+- Skill folder name format: lowercase kebab-case
+- Examples:
+  - `skills/tradly-api/SKILL.md`
+  - `skills/tradly-email/SKILL.md`
+  - `skills/tradly-auth/SKILL.md`
 
 ## Skill Quality Checklist
 
@@ -32,9 +43,3 @@ Each `SKILL.md` should include:
 - Common tasks with runnable examples
 - Error handling and troubleshooting
 - Security notes (no hardcoded secrets)
-
-## Next Steps
-
-1. Move or copy `tradly-api-SKILL.md` into `skills/tradly-api/SKILL.md`.
-2. Split large guides into focused skills when needed (auth, catalog, checkout, content/layers).
-3. Keep examples framework-agnostic unless a section is explicitly framework-specific.

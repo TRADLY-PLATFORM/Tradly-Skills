@@ -2,9 +2,10 @@
 
 ## Naming
 
-- Folder name: lowercase kebab-case (example: `tradly-auth`)
-- File name: always `SKILL.md`
-- Frontmatter `name`: stable id, usually matching folder name
+- One folder per skill under `skills/`
+- Skill file name: always `SKILL.md`
+- Skill folder name: lowercase kebab-case (example: `tradly-auth`)
+- Frontmatter `name`: stable id matching folder name (example: `tradly-auth`)
 
 ## Writing Rules
 
