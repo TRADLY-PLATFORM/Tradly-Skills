@@ -6,6 +6,55 @@ license: Apache 2.0
 
 # Tradly API Development Guide
 
+## When To Use
+
+- Build a new Tradly-powered marketplace, storefront, booking, or directory app.
+- Integrate Tradly APIs into an existing JavaScript/TypeScript codebase.
+- Implement direct API integration without depending on a Tradly SDK.
+
+## When Not To Use
+
+- You need a no-code setup only (use Tradly dashboard/admin configuration flows instead).
+- You are building on a non-Tradly backend where replacing core commerce APIs is out of scope.
+- You cannot securely manage API credentials/server-side routes.
+
+## Agent Execution Contract
+
+When an agent uses this skill, it should:
+
+1. Confirm required credentials and runtime env vars.
+2. Implement a reusable API client first.
+3. Build features in this order: auth -> catalog/layers -> cart/checkout -> orders.
+4. Add robust error handling and response normalization.
+5. Validate flows with runnable API examples before finalizing.
+
+## Required Inputs
+
+- `TRADLY_API_URL` (default: `https://api.tradly.app`)
+- `TRADLY_TENANT_ID` (tenant/account identifier)
+- `TRADLY_API_KEY` or `VITE_TRADLY_AUTH_KEY` depending on integration mode
+- Optional: user auth token for user-scoped endpoints
+
+## Output Expectations
+
+Deliverables from this skill should include:
+
+- Env setup (`.env.example` and safe secret usage)
+- A shared Tradly API client module
+- Feature modules with clear responsibilities (auth, products, orders, layers)
+- Error and retry strategy for network/auth/rate-limit failures
+- Minimal test or verification steps for critical user journeys
+
+## Quick Build Recipe (Agent-Friendly)
+
+1. Setup environment variables and `.gitignore` secret rules.
+2. Create `tradlyApi` client with base headers and centralized error handling.
+3. Implement authentication and token persistence strategy.
+4. Implement product/layers read flows with normalized response mapping.
+5. Implement cart/checkout/order write flows with server-side protection.
+6. Add lead capture flow (`/v1/users/register/{type}`) where needed.
+7. Smoke test using cURL and one frontend flow end-to-end.
+
 ## Overview
 
 Build marketplace and commerce applications using Tradly's headless API platform. This guide helps developers and product managers create production-ready applications with direct API integration.
