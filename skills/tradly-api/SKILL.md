@@ -3186,6 +3186,180 @@ Without JSON-LD, AI bots have to infer structure from raw HTML — less reliable
 
 ---
 
+### P20. Cart → Tradly-Hosted Payment Flow (Stripe)
+
+Use this pattern for any checkout where the user pays via Tradly's Stripe-hosted page — no direct Stripe API integration needed. Common use cases: bid-to-feature flows, single-item purchases, sponsorship payments.
+
+#### Flow overview
+
+```
+POST /v1/cart                            → add listing to cart (with custom_price if bidding)
+POST /v1/cart/checkout                   → create order → returns order_reference
+GET  /v1/payments/web/paymentMethods     → discover active payment methods
+redirect → /v1/payments/web/paymentIntent?...  → user pays on Tradly's Stripe page
+```
+
+#### Step 1 — Add to cart
+
+```typescript
+const addRes = await fetch(`${TRADLY_API_BASE}/v1/cart`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${appKey}`,   // pk_live_* app key
+    "x-auth-key": userToken,             // user's JWT
+  },
+  body: JSON.stringify({
+    cart: {
+      listing_id: LISTING_ID,   // the listing configured for this purchase type
+      quantity: 1,
+      custom_price: bidAmount,  // ⚠️ only works if "Allow custom price" is enabled on listing
+    },
+  }),
+});
+if (!addRes.ok) {
+  const detail = await addRes.text().catch(() => "");
+  throw new Error(`Cart add failed (${addRes.status}): ${detail}`);
+}
+```
+
+**Critical:** `custom_price` is **silently ignored** if "Allow custom price" is not checked on the listing in Tradly SuperAdmin. The listing base price (often RM0) gets passed to Stripe instead, causing `amount_too_small` → Tradly error code **751** ("Tech issues"). Fix: enable "Allow custom price" on the listing in the admin panel.
+
+#### Step 2 — Checkout
+
+```typescript
+const checkoutRes = await fetch(`${TRADLY_API_BASE}/v1/cart/checkout`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${appKey}`,
+    "x-auth-key": userToken,
+  },
+  body: JSON.stringify({ order: { payment_method_id: paymentMethodId } }),
+});
+const checkoutPayload = await checkoutRes.json();
+```
+
+**Response shape is inconsistent across tenants — always try multiple paths to find `order_reference`:**
+
+```typescript
+const orderData = (checkoutPayload?.data ?? checkoutPayload) as Record<string, unknown>;
+const nestedOrder = (orderData?.order && typeof orderData.order === "object")
+  ? orderData.order as Record<string, unknown>
+  : {};
+
+const orderRef = [
+  orderData?.order_reference, orderData?.reference_number, orderData?.reference,
+  nestedOrder.order_reference, nestedOrder.reference_number, nestedOrder.reference,
+].map((v) => String(v ?? "").trim()).find((v) => /^\d+$/.test(v));
+
+if (!orderRef) throw new Error("Checkout succeeded but no order reference returned");
+```
+
+#### Step 3 — Discover payment method
+
+```typescript
+const pmRes = await fetch(`${TRADLY_API_BASE}/v1/payments/web/paymentMethods`, {
+  headers: {
+    Authorization: `Bearer ${appKey}`,
+    "x-auth-key": userToken,
+  },
+});
+const pmPayload = await pmRes.json();
+const methods: any[] = pmPayload?.data?.payment_methods ?? pmPayload?.data ?? [];
+const paymentMethod =
+  methods.find((m: any) => m.active && m.type === "stripe_web") ??
+  methods.find((m: any) => m.active);
+if (!paymentMethod) throw new Error("No active payment method configured on this tenant");
+```
+
+#### Step 4 — Build payment URL and redirect
+
+```typescript
+const domain = new URL(siteUrl).hostname; // e.g. "zscommerce.my" — host only, no protocol
+
+const paymentUrl = paymentMethod.type === "stripe_web"
+  ? `${TRADLY_API_BASE}/v1/payments/web/paymentIntent?${new URLSearchParams({
+      order_reference: orderRef,
+      payment_method_id: String(paymentMethod.id),
+      agent: "web",
+      domain,
+      auth_key: userToken,
+    })}`
+  : `https://${domain}/external_checkout?${new URLSearchParams({
+      domain,
+      redirect_uri: `https://${domain}/`,
+      order_reference: orderRef,
+      token: userToken,
+    })}`;
+
+// Redirect user — they complete payment on Tradly's Stripe-hosted page
+window.location.assign(paymentUrl);
+```
+
+#### Error codes from this flow
+
+| Code | Meaning | Root cause & fix |
+|------|---------|-----------------|
+| 360 | Currency not found | Do **not** send `x-currency` header — omitting it lets the tenant default apply |
+| 470 | Listing not found | Cross-tenant token. Each listing belongs to one tenant; using another tenant's JWT causes 470. Use the correct tenant's `pk_live_*` key. |
+| 751 | Tech issues (Stripe failure) | `amount_too_small` — listing base price is RM0 and "Allow custom price" is not enabled. Enable it in Tradly SuperAdmin on the listing. |
+
+#### Currency — use env var, not dynamic resolution
+
+```typescript
+// ✅ CORRECT — set TRADLY_CURRENCY in wrangler.jsonc vars
+const currency = env.TRADLY_CURRENCY || "MYR";
+
+// ❌ WRONG — do not try to resolve currency dynamically or send x-currency header
+```
+
+Omit the `x-currency` header on cart/checkout calls. Tradly uses the tenant's configured default, and sending an explicit header can trigger error 360 if the tenant hasn't mapped that currency.
+
+#### App key in Cloudflare Worker — safe fallback chain
+
+When the checkout flow runs inside a Worker, read the app key with a fallback chain that covers both local dev and production:
+
+```typescript
+function tradlyAppKey(env: Env): string {
+  return (env as any).TRADLY_PK_KEY
+    || (env as any).VITE_TRADLY_PK_KEY
+    || env.TRADLY_SERVER_AUTH_KEY
+    || env.TRADLY_AUTH_KEY
+    || (env as any).VITE_TRADLY_AUTH_KEY
+    || "";
+}
+```
+
+`VITE_*` vars are visible during `wrangler dev` (local); plain `TRADLY_AUTH_KEY` is set as a Cloudflare secret in production.
+
+#### Always surface raw Tradly errors to the client
+
+Never swallow or genericize Tradly error responses during development. Read the raw body first, then parse:
+
+```typescript
+const raw = await response.text();
+let data: Record<string, unknown> = {};
+try { data = JSON.parse(raw); } catch { /* not JSON */ }
+if (!response.ok) {
+  // Surface the real message — generic fallbacks hide root causes
+  throw new Error(data.error as string ?? `Server error ${response.status}: ${raw.slice(0, 300)}`);
+}
+```
+
+#### Testing the flow with curl
+
+Cloudflare Workers with bot protection **403** curl requests that have an empty `User-Agent`. Always pass a real UA:
+
+```bash
+curl -s -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
+  -X POST "https://yourdomain.com/api/claims" \
+  -H "Content-Type: application/json" \
+  -d '{"userToken":"<user_jwt>","bidAmount":100,"name":"My Company"}'
+```
+
+---
+
 ## Additional Resources
 
 ### Official Documentation
